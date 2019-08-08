@@ -16,6 +16,8 @@ def get_target(target_path):
     # Check if each line is end of /n
     ip_list = []
     for line in ip_data:
+        if line == "\n":
+            continue
         if line[:-1] != "\n":
             line = line[:-1]
         ip_list.append(line)
@@ -37,7 +39,7 @@ def generate_rf():
         order = 0
         for ip in ip_list:
             order += 1
-            added_info = "echo \":) [{current}/{total}] Scanning {IP}...\"\nset RHOSTS {IP}\nrun\n".format(current=order,total=ip_count, IP=ip)
+            added_info = "echo \":) [{current}/{total}] Scanning {IP}...\"\nset RHOSTS {IP}\nrun\n".format(current=order, total=ip_count, IP=ip)
             cve_2019_0708_bluekeep.write(added_info)
         # Exit at end of scan
         cve_2019_0708_bluekeep.write("exit")
