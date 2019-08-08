@@ -34,8 +34,10 @@ def generate_rf():
         # Write necessary info
         cve_2019_0708_bluekeep.write("use auxiliary/scanner/rdp/cve_2019_0708_bluekeep\nset THREADS 5\n")
         # Add IP
+        order = 0
         for ip in ip_list:
-            added_info = "echo \":) Scanning {IP}...\"\nset RHOSTS {IP}\nrun\n".format(IP = ip)
+            order += 1
+            added_info = "echo \":) [{current}/{total}] Scanning {IP}...\"\nset RHOSTS {IP}\nrun\n".format(current=order,total=ip_count, IP=ip)
             cve_2019_0708_bluekeep.write(added_info)
         # Exit at end of scan
         cve_2019_0708_bluekeep.write("exit")
@@ -49,9 +51,8 @@ def washing_log(log_path):
     log_data = open(log_path).readlines()
     with open(log_path, "w") as log:
         for line in log_data:
-            if line[:2] == ":)":
-                continue
-            log.write(line)
+            if "[+]" in line:
+                log.write(line)
 
 
 def run():
@@ -61,7 +62,7 @@ def run():
     """
     log_name = datetime.datetime.now(pytz.timezone('PRC')).strftime("%Y-%m-%d_%H-%M-%S") + ".log"
     log_path = "log/{}".format(log_name)
-    os.system("msfconsole -r rc/cve_2019_0708_bluekeep.rc -q | grep -E '[+]|^(:))'| tee {}".format(log_path))
+    os.system("logsave {log_path} msfconsole -r rc/cve_2019_0708_bluekeep.rc -q | grep -E '[+]|^(:))'".format(log_path=log_path))
     washing_log(log_path)
     vulnerability_count = len(open(log_path, "r").readlines())
     return log_path, vulnerability_count
