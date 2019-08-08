@@ -3,48 +3,73 @@ import datetime
 import pytz
 
 
+def get_target(target_path):
+    """
+    TODO: Get IP count.
+    :return:ip_list,ip_count
+    """
+    try:
+        ip_data = open(target_path, "r").readlines()
+    except OSError:
+        print("[!] Can not open {}.It exists?".format(target_path))
+        exit()
+    # Check if each line is end of /n
+    ip_list = []
+    for line in ip_data:
+        if line[:-1] != "\n":
+            line = line[:-1]
+        ip_list.append(line)
+    ip_count = len(ip_list)
+    return ip_list, ip_count
+
+
 def generate_rf():
     """
-    TODO: Create msf_0708.
-    :return:success
+    TODO: Generate msf resource file.
+    :return:
     """
-    success = True
+    ip_list, ip_count = get_target("IP.txt")
     try:
-        # Get ip from IP.txt
-        IP_list = open("IP.txt", "r").readlines()
-        # Generate msf resource file
-        msf_0708  = open("msf_0708", "w")
-        # Write necesary info
-        msf_0708.write("use auxiliary/scanner/rdp/cve_2019_0708_bluekeep\n")
+        cve_2019_0708_bluekeep = open("rc/cve_2019_0708_bluekeep.rc", "w")
+        # Write necessary info
+        cve_2019_0708_bluekeep.write("use auxiliary/scanner/rdp/cve_2019_0708_bluekeep\nset THREADS 5\n")
         # Add IP
-        for ip in IP_list:
-            Added_info = "set RHOST " + ip + "run\n"
-            msf_0708.write(Added_info)
+        for ip in ip_list:
+            added_info = "echo \":) Scanning {IP}...\"\nset RHOSTS {IP}\nrun\n".format(IP = ip)
+            cve_2019_0708_bluekeep.write(added_info)
         # Exit at end of scan
-        msf_0708.write("exit")
-    except:
-        success = False
-    return success
+        cve_2019_0708_bluekeep.write("exit")
+    except OSError:
+        print("[!] Failed to generate cve_2019_0708_bluekeep.rc")
+        exit()
+    print(":) Generate cve_2019_0708_bluekeep.rc successfully!")
+
+
+def washing_log(log_path):
+    log_data = open(log_path).readlines()
+    with open(log_path, "w") as log:
+        for line in log_data:
+            if line[:2] == ":)":
+                continue
+            log.write(line)
 
 
 def run():
     """
-    TODO: Run msf_0708 and record operate information.
-    :return:log_name
+    TODO: Run cve_2019_0708_bluekeep and record operate information.
+    :return:log_path,vulnerability_count
     """
-    log_name = datetime.datetime.now(pytz.timezone('PRC')).strftime("%Y-%m-%d_%H-%M-%S")
-    print("[*] Scanning......")
-    os.system("msfconsole -r msf_0708 -q | grep -E '[+]'| tee {}".format(log_name))
-    count = len(open(log_name, "r").readlines())
-    return log_name, count
+    log_name = datetime.datetime.now(pytz.timezone('PRC')).strftime("%Y-%m-%d_%H-%M-%S") + ".log"
+    log_path = "log/{}".format(log_name)
+    os.system("msfconsole -r rc/cve_2019_0708_bluekeep.rc -q | grep -E '[+]|^(:))'| tee {}".format(log_path))
+    washing_log(log_path)
+    vulnerability_count = len(open(log_path, "r").readlines())
+    return log_path, vulnerability_count
 
 
 if __name__ == "__main__":
-    if generate_rf():
-        print(":) Generate msf_0708 successfully!")
-    else:
-        print("[!] Failed to generate msf_0708")
-        exit()
-    log_location,count = run()
+    generate_rf()
+    print("[*] Starting msf.....")
+    log_location, count = run()
     print(":) Scan is over.{} target(s) is vulnerable.".format(count))
     print(":) The location of log file is: {}".format(log_location))
